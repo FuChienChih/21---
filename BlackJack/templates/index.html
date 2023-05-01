@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<style>
+        .card {
+        display: flex;
+        flex-direction: row;
+        }
+        .card > div {
+        margin-right: 100px;
+        }
+	</style>
+</head>
+<body>
+    <div class="card">
+        <div>
+            <p>A：<span id="value1">0</span></p>
+            <button onclick="increment(1)">+</button>
+            <button onclick="decrement(1)">-</button>
+        </div>
+        <div>
+            <p>2：<span id="value2">0</span></p>
+            <button onclick="increment(2)">+</button>
+            <button onclick="decrement(2)">-</button>
+        </div>
+        <div>
+            <p>3：<span id="value3">0</span></p>
+            <button onclick="increment(3)">+</button>
+            <button onclick="decrement(3)">-</button>
+        </div>
+        <div>
+            <p>4：<span id="value4">0</span></p>
+            <button onclick="increment(4)">+</button>
+            <button onclick="decrement(4)">-</button>
+        </div>
+        <div>
+            <p>5：<span id="value5">0</span></p>
+            <button onclick="increment(5)">+</button>
+            <button onclick="decrement(5)">-</button>
+        </div>
+    </div>
+    <br>
+    <br>
+    <br>
+    <br>
+    <div class="card">
+        <div>
+            <p>6：<span id="value6">0</span></p>
+            <button onclick="increment(6)">+</button>
+            <button onclick="decrement(6)">-</button>
+        </div>
+        <div>
+            <p>7：<span id="value7">0</span></p>
+            <button onclick="increment(7)">+</button>
+            <button onclick="decrement(7)">-</button>
+        </div>
+        <div>
+            <p>8：<span id="value8">0</span></p>
+            <button onclick="increment(8)">+</button>
+            <button onclick="decrement(8)">-</button>
+        </div>
+        <div>
+            <p>9：<span id="value9">0</span></p>
+            <button onclick="increment(9)">+</button>
+            <button onclick="decrement(9)">-</button>
+        </div>
+        <div>
+            <p>10/J/Q/K：<span id="value10">0</span></p>
+            <button onclick="increment(10)">+</button>
+            <button onclick="decrement(10)">-</button>
+        </div>
+    </div>
+    <br>
+    <br>
+    <br>
+    <br>
+        <div>
+            <p>真數：<span id="truth">0</span></p>
+            <button onclick="reset(10)">歸零</button>
+        </div>
+	<script>
+		var values = [0,0,0,0,0,0,0,0,0,0];
+		function increment(index) {
+			values[index-1]++;
+			document.getElementById("value"+index).innerHTML = values[index-1];
+			updateResult();
+		}
+		function decrement(index) {
+			values[index-1]--;
+			document.getElementById("value"+index).innerHTML = values[index-1];
+			updateResult();
+		}
+		function reset(length) {
+            for (let i = 0; i < length; i++) {
+                values[i] = 0;
+                document.getElementById("value"+(i+1)).innerHTML = values[i];
+            }
+            document.getElementById("truth").innerHTML = 0;
+            updateResult();
+        }
+		function updateResult() {
+            var sum = values.reduce(function(a, b) { return a + b; }, 0);
+            var length_cards = 52*8 - sum;
+            var count = values[1]+values[2]+values[3]+values[4]+values[5]-values[0]-values[9];
+            var truth = count / (length_cards / 52);
+			document.getElementById("truth").innerHTML = truth.toFixed(2);
+		}
+	</script>
+</body>
+
+</html>
