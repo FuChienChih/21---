@@ -387,7 +387,7 @@ def blackjack():
     player5 = Player("Player5")
     dealer = Dealer()
     count = 0
-    win,loss,tie_,sum_,double_win,double_loss,double_tie = 0,0,0,0,0,0,0
+    win,loss,tie_,sum_,double_win,double_loss,double_tie,bj = 0,0,0,0,0,0,0,0
     # 遊戲迴圈
     truth = []
     win_loss = []
@@ -438,13 +438,13 @@ def blackjack():
                 if advisor == "S":
                     break
                 elif advisor == "D":
-                    card = deck.deal()
-                    player.hand.add_card(card)
-                    count += check_count(card.value)
+                    player.hit(deck)
+                    print("")
+                    count += check_count(player.hand.cards[-1].value)
                     if player.name == 'Player1':
                         bet*=2
                         print("Player1翻倍")
-                        print("Player1翻到",card.value)
+                        print("Player1翻到",player.hand.cards[-1].value)
                         print("Player1點數",player.hand.value)
                         double = True
                     break
@@ -477,6 +477,7 @@ def blackjack():
             if player1.hand.value == 21 and len(player1.hand.cards) == 2:
                 player1.chips += bet * 1.5
                 print("恭喜21點！")
+                bj += 1
                 print(f"{player1.name} 贏 {bet * 1.5} 籌碼!")
                 win+=1
                 win_loss.append('win')
@@ -531,19 +532,12 @@ def blackjack():
         dealer.hand = Hand()
 
     
-    print('籌碼量:',player1.chips)
-    print('總遊戲次數:',sum_)
-    print('win:',win)
-    print('loss:',loss)
-    print('tie',tie_)
-    print("double_win",double_win)
-    print("double_loss",double_loss)
     df = pd.DataFrame({'真數': truth,
                         '輸贏':win_loss,
                         })
     df.to_csv(file_path, index=False)
     
-    return player1.chips,win,loss,tie_,sum_,double_win,double_loss,double_tie
+    return player1.chips,win,loss,tie_,sum_,double_win,double_loss,double_tie,bj
 
 
 def check_count(card_value):
@@ -567,10 +561,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import stats
 if __name__ == "__main__":
-    chips_list,win_list,loss_list,tie_list,sum_list,double_win_list,double_loss_list,double_tie_list = [],[],[],[],[],[],[],[]
+    chips_list,win_list,loss_list,tie_list,sum_list,double_win_list,double_loss_list,double_tie_list,bj_list = [],[],[],[],[],[],[],[],[]
     start_time = time.time()    
     for i in range(5):
-        chips,win,loss,tie_,sum_,double_win,double_loss,double_tie = blackjack()
+        chips,win,loss,tie_,sum_,double_win,double_loss,double_tie,bj = blackjack()
         chips_list.append(chips)
         win_list.append(win)
         loss_list.append(loss)
@@ -579,6 +573,7 @@ if __name__ == "__main__":
         double_win_list.append(double_win)
         double_loss_list.append(double_loss)
         double_tie_list.append(double_tie)
+        bj_list.append(bj)
     df = pd.DataFrame({'chips': chips_list,
                         'win':win_list,
                         'loss':loss_list,
@@ -587,6 +582,7 @@ if __name__ == "__main__":
                         'double_win':double_win_list,
                         'double_loss':double_loss_list,
                         'double_tie':double_tie_list,
+                        'BlackJack':bj_list,
                         })
     df.to_csv("/Users/fuqianzhi/Desktop/21點專案/data.csv", index=False)
     end_time = time.time()
