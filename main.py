@@ -66,6 +66,7 @@ class Hand:
         self.cards = []
         self.value = 0
         self.aces = 0
+        self.is_split = False
 
     def add_card(self, card):
         self.cards.append(card)
@@ -82,18 +83,19 @@ class Hand:
 # 定義玩家類別
 class Player:
     def __init__(self, name):
+        self.bet = 30
+        self.double = False
         self.name = name
         self.chips = 10000
         self.hand = Hand()
-
     def mat(self,len_cards,count ):
         truth = count / (len_cards / 52)
         return truth
 
-    def bet(self, len_cards, count):
+    def place＿bet(self, len_cards, count):
         truth = self.mat(len_cards,count)
         if truth > 2:
-            bet = 50
+            bet = 20
         else:
             bet = 0
         return bet
@@ -102,17 +104,6 @@ class Player:
     def hit(self, deck):
         self.hand.add_card(deck.deal())
         self.hand.adjust_for_ace()
-
-    def hit_or_stand(self, deck, basic_strategy):
-        print(f"{self.name}的手牌: ")
-        for card in self.hand.cards:
-            print(card)
-        print(f"點數: {self.hand.value}")
-
-        print("hit or stand? Enter 'h' or 's':")
-        print(basic_strategy)
-        choice = basic_strategy
-        return choice
 
 
 # 定義莊家類別
@@ -129,13 +120,32 @@ class Dealer:
     def hit(self, deck):
         self.hand.add_card(deck.deal())
         self.hand.adjust_for_ace()
-        print("莊家翻到", self.hand.cards[-1].value)
-        print("莊家點數", self.hand.value)
+        # print("莊家翻到", self.hand.cards[-1].value)
+        # print("莊家點數", self.hand.value)
 
 
 
 # 基本策略表
 def basic_strategy(player_hand, dealer_card,truth):
+    if len(player_hand.cards) == 1 :
+        if player_hand.cards[0].rank == "Ace":
+            return "HS"
+        else:
+            return "H"
+    # 分牌區
+    if player_hand.cards[0].rank == player_hand.cards[1].rank and  len(player_hand.cards)==2:
+        if player_hand.cards[0].rank == "Ace" or player_hand.cards[0].rank == "Eight":
+            return "SP"
+        elif (player_hand.cards[0].rank == "Two" or player_hand.cards[0].rank == "Three") and dealer_card <= 7:
+            return "SP"
+        elif player_hand.cards[0].rank == "Six" and dealer_card >=5 and dealer_card<=6:
+            return "SP"
+        elif player_hand.cards[0].rank == "Four" and dealer_card <= 6:
+            return "SP"
+        elif player_hand.cards[0].rank == "Seven" and dealer_card <= 7:
+            return "SP"
+        elif player_hand.cards[0].rank == "Nine" and (dealer_card <= 6 or (dealer_card >=8 and dealer_card<=9)):
+            return "SP"
     # 玩家手牌有A
     strategy = {
         (4, 2): "H",
@@ -363,6 +373,7 @@ def basic_strategy(player_hand, dealer_card,truth):
         strategy[(16,9)] = "S"
         strategy[(15,10)] = "S"
         strategy[(10,10)] = "D"
+    
     try :
         return strategy[(player_hand.value,dealer_card)]
     except:
@@ -370,10 +381,7 @@ def basic_strategy(player_hand, dealer_card,truth):
 
 
 # 定義遊戲函數
-def blackjack():
-    desktop_path = '/Users/fuqianzhi/Desktop/21點專案/'  # 桌面路径
-    file_name = '1000data.csv'    # 文件名
-    file_path = desktop_path + file_name  # 文件路径
+def blackjack(cycle=1):
     print("--------------------遊戲開始--------------------")
     print("Welcome to Blackjack!\n")
     # 創建新牌組並洗牌
@@ -387,12 +395,17 @@ def blackjack():
     player5 = Player("Player5")
     dealer = Dealer()
     count = 0
-    win,loss,tie_,sum_,double_win,double_loss,double_tie,bj = 0,0,0,0,0,0,0,0
+    player1_hand,player2_hand,player3_hand,player4_hand,player5_hand = [],[],[],[],[]
+    player6_hand,player7_hand,player8_hand,player9_hand = [],[],[],[]
+    total_chips,dealer_visible,dealer_hand,truths = [],[],[],[]
+    total_rounds = 0
+    Top ,Bottom = 10000,10000
+    sum_ = 0
+    total_bets = 0
     # 遊戲迴圈
-    truth = []
-    win_loss = []
-    while sum_ <= 2400:
-        double = False
+    
+    while total_bets < 22400:
+        total_rounds+=1
         # 如果牌組卡數低於一定值，重新洗牌
         if len(deck.cards) < 52 * 5:
             print("=================重新洗牌=================")
@@ -400,144 +413,172 @@ def blackjack():
             deck.shuffle()
             count = 0
         # 真數
-        truth.append(count / (len(deck.cards) / 52))
+        truth = count / (len(deck.cards) / 52)
+        if truth > 2:
+            truths.append(truth)
+            # 開5家
+            sum_ += 1
         # 玩家下注
         players = [player1, player2, player3, player4, player5]
         for player in players:
-            bet = player.bet(len(deck.cards), count)
-        if bet > 1:
-            print("---------------------------------------")
-            print("這局真數",count / (len(deck.cards) / 52))
+            player.hand = Hand()
+            player.bet = player.place＿bet(len(deck.cards), count)
+
+        dealer.hand = Hand()
         
         # 發牌
         for i in range(2):
             for player in players:
-                card = deck.deal()
-                player.hand.add_card(card)
-                count += check_count(card.value)
-            card = deck.deal()
-            dealer.hand.add_card(card)
-            count += check_count(card.value)
-        if bet == 0:
-            win_loss.append("None")
-            for player in players:
-                player.hand = Hand()
-            dealer.hand = Hand()
-            continue
-        else :
-            sum_ += 1
-        # 顯示牌面
-        print("莊家明牌", dealer.hand.cards[1])
-        print("player1點數", player1.hand.value)
+                player.hit(deck)
+                count += check_count(player.hand.cards[-1].value)
+            dealer.hit(deck)
+            count += check_count(dealer.hand.cards[-1].value)
+        
+            
         # 玩家回合 使用基本策略，根據手牌與莊家名牌決定s or h
+        r = 6
         for player in players:
+            # 如果player是分牌Ａ跳過player
             while True:
                 advisor = basic_strategy(
-                    player.hand, dealer.hand.cards[1].value,truth[-1]
+                    player.hand, dealer.hand.cards[1].value,truth
                 )   
                 if advisor == "S":
                     break
+                # ＡＡ分牌
+                elif advisor == "HS":
+                    player.hit(deck)
+                    count += check_count(player.hand.cards[-1].value)
+                    break
                 elif advisor == "D":
                     player.hit(deck)
-                    print("")
                     count += check_count(player.hand.cards[-1].value)
-                    if player.name == 'Player1':
-                        bet*=2
-                        print("Player1翻倍")
-                        print("Player1翻到",player.hand.cards[-1].value)
-                        print("Player1點數",player.hand.value)
-                        double = True
+                    player.bet*=2
+                    player.double = True
                     break
                 elif advisor == "H":
-                    card = deck.deal()
-                    player.hand.add_card(card)
-                    count += check_count(card.value)
-                    if player.name == 'Player1':
-                        print('Player1翻到',card.value)
-
+                    player.hit(deck)
+                    count += check_count(player.hand.cards[-1].value)
+                elif advisor == "SP":
+                    exec(f"player{r}=Player(player.name)")
+                    exec(f"players.append(player{r})")
+                    card = player.hand.cards.pop()
+                    exec(f"player{r}.hand.add_card(card)")
+                    exec(f"player{r}.bet = player.bet")
+                    r+=1
         # 莊家回合
         while True :
             if  dealer.hand.value < 17  :
-                card = deck.deal()
-                dealer.hand.add_card(card)
-                count += check_count(card.value)
+                dealer.hit(deck)
+                count += check_count(dealer.hand.cards[-1].value)
             else :
                 break
-        
-        # 顯示結果
-        print("莊家手牌:")
-        for card in dealer.hand.cards:
-            print(card)
-        print(f"總點數: {dealer.hand.value}\n")
+        # 如果真數 < 2不紀錄
+        if player1.bet == 0:
+            continue
         
         # 判斷勝負/分配籌碼
-
-        if player1.hand.value <= 21:
-            # 天生21點
-            if player1.hand.value == 21 and len(player1.hand.cards) == 2:
-                player1.chips += bet * 1.5
-                print("恭喜21點！")
-                bj += 1
-                print(f"{player1.name} 贏 {bet * 1.5} 籌碼!")
-                win+=1
-                win_loss.append('win')
-                if double:
-                    win-=1
-                    double_win += 1
-            elif dealer.hand.value > 21:
-                player1.chips += bet
-                
-                print(f"{player1.name} 贏 {bet} 籌碼!")
-                win+=1
-                win_loss.append('win')
-                if double:
-                    win-=1
-                    double_win += 1
-            elif dealer.hand.value < player1.hand.value:
-                player1.chips += bet
-                print(f"{player1.name} 贏 {bet} 籌碼!")
-                win+=1
-                win_loss.append('win')
-                if double:
-                    win-=1
-                    double_win += 1
-            elif dealer.hand.value > player1.hand.value:
-                print(f"{player1.name} 輸 {bet} 籌碼!")
-                player1.chips -= bet
-                loss+=1
-                win_loss.append('loss')
-                if double:
-                    loss-=1
-                    double_loss+=1
-            else:
-                print("平手，退回籌碼")
-                tie_+=1
-                win_loss.append('tie_')
-                if double:
-                    tie_-=1
-                    double_tie+=1
-        else:
-            print(f"{player1.name} 輸 {bet} 籌碼!")
-            player1.chips -= bet
-            loss+=1
-            win_loss.append('loss')
-            if double:
-                    loss-=1
-                    double_loss+=1
-        
-        # 顯示最終結果
-        print(f"{player1.name} 剩餘的籌碼: {player1.chips}")
         for player in players:
-            player.hand = Hand()
-        dealer.hand = Hand()
+            total_bets += player.bet
+            if player.hand.value <= 21:
+                # 天生21點
+                if player.hand.value == 21 and len(player.hand.cards) == 2:
+                    if dealer.hand.value == 21 and len(player.hand.cards) == 2:
+                        pass 
+                    else:
+                        player.chips += player.bet * 1.5
+                # 莊家爆牌
+                elif dealer.hand.value > 21:
+                    player.chips += player.bet
+                # 莊家輸
+                elif dealer.hand.value < player.hand.value:
+                    player.chips += player.bet
+                # 莊家贏
+                elif dealer.hand.value > player.hand.value:
+                    player.chips -= player.bet
+                # 平手
+                else:
+                    if dealer.hand.value == 21 and len(player.hand.cards) == 2:
+                        player.chips -= player.bet
+            else:
+                player.chips -= player.bet
+        
+        # 將分牌後輸贏的籌碼加回本人
+        for player_ in players[6:]:
+            if player_.name == "Player1":
+                player1.chips += player_.chips-10000
+            elif player_.name == "Player2":
+                player2.chips += player_.chips-10000
+            elif player_.name == "Player3":
+                player3.chips += player_.chips-10000
+            elif player_.name == "Player4":
+                player4.chips += player_.chips-10000
+            elif player_.name == "Player5":
+                player5.chips += player_.chips-10000
+            
+        
+
+        # 顯示最終結果
+        chips = player1.chips+player2.chips+player3.chips+player4.chips+player5.chips-40000
+        total_chips.append(chips)
+        dealer_visible.append(dealer.hand.cards[1].value)
+        player1_hand.append([i.value for i in player1.hand.cards])
+        player2_hand.append([i.value for i in player2.hand.cards])
+        player3_hand.append([i.value for i in player3.hand.cards])
+        player4_hand.append([i.value for i in player4.hand.cards])
+        player5_hand.append([i.value for i in player5.hand.cards])
+        dealer_hand.append([i.value for i in dealer.hand.cards])
+        # r 用來計算要加在
+        r = 5
+        for player_ in (players+[None,None,None,None,None])[5:10]:
+            if player_ == None:
+                break
+            if r == 5:
+                player6_hand.append([i.value for i in players[r].hand.cards])
+                r+=1
+            elif r == 6:
+                player7_hand.append([i.value for i in players[r].hand.cards])
+                r+=1
+            elif r == 7:
+                player8_hand.append([i.value for i in players[r].hand.cards])
+                r+=1
+            elif r == 8:
+                player9_hand.append([i.value for i in players[r].hand.cards])
+                r+=1
+        # 如果沒有分牌，則紀錄None
+        for i in [player6_hand,player7_hand,player8_hand,player9_hand]:
+            if len(i)<len(player1_hand):
+                i.append(None)
+
+        # 將分牌所產生的牌桌清空
+        players = players[:5]
+        # 
+        if chips > Top:
+            Top = chips
+        if chips < Bottom:
+            Bottom = chips
 
     
-    df = pd.DataFrame({'真數': truth,
-                        '輸贏':win_loss,
+    df = pd.DataFrame({'total_chips' : total_chips,
+                        '真數': truths,
+                        'dealer_visible':dealer_visible,
+                        'player1_hand':player1_hand,
+                        'player2_hand':player2_hand,
+                        'player3_hand':player3_hand,
+                        'player4_hand':player4_hand,
+                        'player5_hand':player5_hand,
+                        'player6_hand':player6_hand,
+                        'player7_hand':player7_hand,
+                        'player8_hand':player8_hand,
+                        'player9_hand':player9_hand,
+                        'dealer_hand':dealer_hand,
                         })
+    desktop_path = '/Users/fuqianzhi/Desktop/21點專案/每回合詳細資料/'  # 桌面路径
+    file_name = f'{cycle}data.csv'    # 文件名
+    file_path = desktop_path + file_name  # 文件路径
     df.to_csv(file_path, index=False)
     
-    return player1.chips,win,loss,tie_,sum_,double_win,double_loss,double_tie,bj
+    return chips,Top,Bottom
 
 
 def check_count(card_value):
@@ -547,46 +588,29 @@ def check_count(card_value):
         return 0
     else:
         return -1
-def real_play():
-    deck = Deck()
-    deck.shuffle()
-    count = 0
-    while True:
-        truth = count / (len(deck.cards) / 52)
-        this_round_cards = input("輸入本局卡")
 
-        print("下一局真數",truth)
 
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy import stats
 if __name__ == "__main__":
-    chips_list,win_list,loss_list,tie_list,sum_list,double_win_list,double_loss_list,double_tie_list,bj_list = [],[],[],[],[],[],[],[],[]
-    start_time = time.time()    
-    for i in range(5):
-        chips,win,loss,tie_,sum_,double_win,double_loss,double_tie,bj = blackjack()
-        chips_list.append(chips)
-        win_list.append(win)
-        loss_list.append(loss)
-        tie_list.append(tie_)
-        sum_list.append(sum_)
-        double_win_list.append(double_win)
-        double_loss_list.append(double_loss)
-        double_tie_list.append(double_tie)
-        bj_list.append(bj)
-    df = pd.DataFrame({'chips': chips_list,
-                        'win':win_list,
-                        'loss':loss_list,
-                        'tie_':tie_list,
-                        'sum_':sum_list,
-                        'double_win':double_win_list,
-                        'double_loss':double_loss_list,
-                        'double_tie':double_tie_list,
-                        'BlackJack':bj_list,
+    # blackjack函式會根據流水決定玩幾手。result會記錄結束後剩餘的籌碼量
+    results = []
+    # cycle 代表要模擬的週期數
+    cycle = 500
+    # 每個cycle中，贏到最多的籌碼與輸到最多的籌碼量
+    Top,Bottom = [],[]
+
+    for i in range(cycle):
+        start_time = time.time()    
+        result,top,bottom = blackjack(i+1)
+        results.append(result)
+        Top.append(top)
+        Bottom.append(bottom)
+        end_time = time.time()
+    df = pd.DataFrame({'chips': results,
+                        'Top':Top,
+                        'Bottom':Bottom,
                         })
     df.to_csv("/Users/fuqianzhi/Desktop/21點專案/data.csv", index=False)
-    end_time = time.time()
-    print('RunTime:',end_time-start_time)
+
 # if __name__ == "__main__":
 #     start_time = time.time()
 #     chips = []
