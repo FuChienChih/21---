@@ -78,12 +78,21 @@ class Hand:
         while self.value > 21 and self.aces:
             self.value -= 10
             self.aces -= 1
+    # 分牌
+    def split_card(self):
+        card = self.cards.pop()
+        if card.rank == "Ace":
+            self.value -= 1
+        else:
+            self.value -= card.value
+        return card
+
 
 
 # 定義玩家類別
 class Player:
     def __init__(self, name):
-        self.bet = 30
+        self.bet = 100
         self.double = False
         self.name = name
         self.chips = 10000
@@ -94,8 +103,13 @@ class Player:
 
     def place＿bet(self, len_cards, count):
         truth = self.mat(len_cards,count)
+        
         if truth > 2:
-            bet = 20
+            bet = 50
+        # elif truth > 3:
+        #     bet = 30
+        # elif truth > 2:
+        #     bet = 20
         else:
             bet = 0
         return bet
@@ -404,8 +418,9 @@ def blackjack(cycle=1):
     total_bets = 0
     # 遊戲迴圈
     
-    while total_bets < 22400:
-        total_rounds+=1
+    while total_bets < 192000:
+        sum_ += 1
+        total_rounds += 1
         # 如果牌組卡數低於一定值，重新洗牌
         if len(deck.cards) < 52 * 5:
             print("=================重新洗牌=================")
@@ -416,8 +431,6 @@ def blackjack(cycle=1):
         truth = count / (len(deck.cards) / 52)
         if truth > 2:
             truths.append(truth)
-            # 開5家
-            sum_ += 1
         # 玩家下注
         players = [player1, player2, player3, player4, player5]
         for player in players:
@@ -462,9 +475,10 @@ def blackjack(cycle=1):
                 elif advisor == "SP":
                     exec(f"player{r}=Player(player.name)")
                     exec(f"players.append(player{r})")
-                    card = player.hand.cards.pop()
+                    card = player.hand.split_card()
+                    player.hand.is_split = True
                     exec(f"player{r}.hand.add_card(card)")
-                    exec(f"player{r}.bet = player.bet")
+                    exec(f"player{r}.hand.is_split = True")
                     r+=1
         # 莊家回合
         while True :
@@ -482,8 +496,8 @@ def blackjack(cycle=1):
             total_bets += player.bet
             if player.hand.value <= 21:
                 # 天生21點
-                if player.hand.value == 21 and len(player.hand.cards) == 2:
-                    if dealer.hand.value == 21 and len(player.hand.cards) == 2:
+                if player.hand.value == 21 and len(player.hand.cards) == 2 and player.hand.is_split == False:
+                    if dealer.hand.value == 21 and len(dealer.hand.cards) == 2:
                         pass 
                     else:
                         player.chips += player.bet * 1.5
@@ -498,13 +512,14 @@ def blackjack(cycle=1):
                     player.chips -= player.bet
                 # 平手
                 else:
-                    if dealer.hand.value == 21 and len(player.hand.cards) == 2:
+                    # 但莊家天生21
+                    if dealer.hand.value == 21 and len(dealer.hand.cards) == 2:
                         player.chips -= player.bet
             else:
                 player.chips -= player.bet
         
         # 將分牌後輸贏的籌碼加回本人
-        for player_ in players[6:]:
+        for player_ in players[5:]:
             if player_.name == "Player1":
                 player1.chips += player_.chips-10000
             elif player_.name == "Player2":
@@ -578,7 +593,7 @@ def blackjack(cycle=1):
     file_path = desktop_path + file_name  # 文件路径
     df.to_csv(file_path, index=False)
     
-    return chips,Top,Bottom
+    return chips,Top,Bottom,sum_
 
 
 def check_count(card_value):
@@ -594,20 +609,24 @@ if __name__ == "__main__":
     # blackjack函式會根據流水決定玩幾手。result會記錄結束後剩餘的籌碼量
     results = []
     # cycle 代表要模擬的週期數
-    cycle = 500
+    cycle = 5
     # 每個cycle中，贏到最多的籌碼與輸到最多的籌碼量
     Top,Bottom = [],[]
-
+    # 總局數
+    total_round = []
     for i in range(cycle):
         start_time = time.time()    
-        result,top,bottom = blackjack(i+1)
+        result,top,bottom,sum_ = blackjack(i+1)
         results.append(result)
         Top.append(top)
         Bottom.append(bottom)
+        total_round.append(sum_)
         end_time = time.time()
+        
     df = pd.DataFrame({'chips': results,
                         'Top':Top,
                         'Bottom':Bottom,
+                        'total_round':total_round,
                         })
     df.to_csv("/Users/fuqianzhi/Desktop/21點專案/data.csv", index=False)
 
